@@ -1,14 +1,41 @@
-import { EngLimitMessage, EngMessageStart } from './textENG.js'
-import { RuLimitMessage, RuMessageStart } from './textRU.js'
+import {
+	EngError,
+	EngError2,
+	EngLimitMessage,
+	EngMessageStart,
+} from './textENG.js'
+import { RuError, RuError2, RuLimitMessage, RuMessageStart } from './textRU.js'
 
-// Стартовое сообщение
+/**
+ * Текст для команды 'start'
+ * @type {{en: Function, ru: Function}}
+ */
 const startText = {
 	en: EngMessageStart,
 	ru: RuMessageStart,
 }
-// Сообщение при спаме
+/**
+ * Текст при спаме
+ * @type {{en: Function, ru: Function}}
+ */
 const limitText = {
 	en: EngLimitMessage,
 	ru: RuLimitMessage,
 }
-export { limitText, startText }
+/**
+ * Текст ошибок
+ * @type {{en: Function, ru: Function}}
+ */
+const errorText = {
+	en: EngError,
+	ru: RuError,
+}
+/**
+ * Текст ошибок 2
+ * @type {{en: Function, ru: Function}}
+ */
+const errorText2 = {
+	en: EngError2,
+	ru: RuError2,
+}
+export { errorText, errorText2, limitText, startText }
