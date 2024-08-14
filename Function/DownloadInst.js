@@ -5,6 +5,7 @@ const { ndown } = pkg
 const download = async link => {
 	try {
 		const result = await ndown(link)
+		console.log(result)
 		if (result.status && result.data.length > 0) {
 			const uniqueUrls = new Set() // Используем Set для хранения уникальных URL
 			const urlListWithExtensions = []

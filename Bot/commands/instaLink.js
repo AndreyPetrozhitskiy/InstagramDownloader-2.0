@@ -2,69 +2,41 @@ import fs from 'fs/promises'
 import { Composer, InputFile } from 'grammy'
 import fetch from 'node-fetch'
 import path from 'path'
+import { fileURLToPath } from 'url'
 import { downloadInstagram } from '../../Function/DownloadInst.js'
-import { contentDirectory } from '../../Function/JunkFunc.js'
-import { errorText, errorText2 } from '../text/exportText.js'
 
-/**
- * Обработчик команды 'instagramLinkHandler'
- * @param {Object} ctx - контекст
- */
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const contentDirectory = path.join(__dirname, '../../Content')
 const instagramLinkHandler = new Composer()
-
-/**
- * Регулярное выражение для проверки ссылки на Instagram
- * @type {RegExp}
- */
 const instagramLinkRegex =
-	/(https:\/\/www\.instagram\.com\/(p|reel|stories)\/[^\s]+)/
+	/(https:\/\/www\.instagram\.com\/(?:[^\s/]+\/)?(p|reel|tv|stories)\/[^\s/]+)/
 
-/**
- * Слушатель для обработки сообщений с ссылками на Instagram
- */
-instagramLinkHandler.hears(
-	instagramLinkRegex,
-	/**
-	 * Обработчик контекста
-	 * @param {Object} ctx - контекст
-	 */
-	async ctx => {
-		/** @type {string} */
-		const language = ctx.state.language || ctx.from.language_code
+instagramLinkHandler.hears(instagramLinkRegex, async ctx => {
+	const link = ctx.match[0]
+	let tempMessage = await ctx.reply('⌛️')
 
-		// Проверка пользователя
-		// ...........................................
-		// Если все хорошо
-		// получение ссылки их контекста
-		/** @type {string} */
-		const link = ctx.match[0]
-		// язык
-
-		// сообщение ошибки
-		/** @type {string} */
-		const errorTextMess = errorText[language] || errorText['en']
-
-		// Сообщение ожидания
-		/** @type {Object} */
-		let tempMessage = await ctx.reply('⌛️')
-		// Отправляем ссылки
-		/** @type {Object} */
+	try {
 		const fetchLink = await downloadInstagram(link)
 
-		if (fetchLink?.status) {
-			/** @type {Array<Object>} */
-			const mediaGroup = []
+		// Проверяем, что объект fetchLink и его свойство status существуют
+		if (fetchLink && fetchLink.status) {
+			try {
+				await fs.access(contentDirectory)
+			} catch {
+				await fs.mkdir(contentDirectory, { recursive: true })
+			}
 
+			const mediaGroup = []
 			for (const item of fetchLink.url_list.filter(i =>
 				['.mp4', '.jpeg'].includes(i.extension)
 			)) {
 				const response = await fetch(item.url)
 				if (!response.ok) {
 					console.error(`Failed to fetch ${item.url}`)
-					continue // Пропускаем текущий элемент и продолжаем с следующим
+					continue // Пропускаем текущий элемент и продолжаем
 				}
 				const buffer = Buffer.from(await response.arrayBuffer())
-
 				const filename = path.join(
 					contentDirectory,
 					`tempfile${Date.now()}${item.extension}`
@@ -72,7 +44,11 @@ instagramLinkHandler.hears(
 				await fs.writeFile(filename, buffer)
 				const mediaType = item.extension === '.mp4' ? 'video' : 'photo'
 				const inputFile = new InputFile(filename)
-				mediaGroup.push({ type: mediaType, media: inputFile, filename }) // Сохраняем объект с путем к файлу
+				mediaGroup.push({
+					type: mediaType,
+					media: inputFile,
+					fileName: filename,
+				})
 			}
 
 			if (mediaGroup.length > 0) {
@@ -80,29 +56,26 @@ instagramLinkHandler.hears(
 					await ctx.replyWithMediaGroup(
 						mediaGroup.map(item => ({ type: item.type, media: item.media }))
 					)
-					await Promise.all(mediaGroup.map(item => fs.unlink(item.filename))) // Удаление всех файлов
+					await Promise.all(mediaGroup.map(item => fs.unlink(item.fileName)))
 				} catch (error) {
 					console.error('Ошибка при отправке медиагруппы:', error)
-					await ctx.reply(errorTextMess)
+					await ctx.reply('Не удалось отправить медиафайлы.')
 				}
 			} else {
-				await ctx.reply(errorTextMess)
+				await ctx.reply('Нет медиафайлов для отправки.')
 			}
+
 			await ctx.api.deleteMessage(ctx.chat.id, tempMessage.message_id)
 		} else {
-			await ctx.api.deleteMessage(ctx.chat.id, tempMessage.message_id)
-			await ctx.reply(errorTextMess)
+			throw new Error('Failed to fetch content from Instagram.')
 		}
+	} catch (error) {
+		console.error('Произошла ошибка:', error)
+		await ctx.api.deleteMessage(ctx.chat.id, tempMessage.message_id)
+		await ctx.reply(
+			'Произошла ошибка при загрузке данных. Попробуйте еще раз позже.'
+		)
 	}
-)
-
-/**
- * Слушатель для обработки сообщений, которые не являются ссылками на Instagram
- */
-instagramLinkHandler.on('message', async ctx => {
-	const language = ctx.state.language || ctx.from.language_code
-	const notALinkMessage = errorText2[language] || errorText['en']
-
-	await ctx.reply(notALinkMessage)
 })
+
 export default instagramLinkHandler
