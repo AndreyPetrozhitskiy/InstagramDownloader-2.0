@@ -1,29 +1,25 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import https from "https";
-import { sequelize } from "./Database/sequlize.js";
-import { downloadInstagram } from "./Function/DownloadInst.js";
-import { createBot } from "./Bot/bot.js";
-dotenv.config();
-const { PORT, BOT_TOKEN } = process.env;
+import cors from "cors"
+import dotenv from "dotenv"
+import express from "express"
+import { createBot } from "./Bot/bot.js"
+dotenv.config()
+const { PORT, BOT_TOKEN } = process.env
 
-const app = express();
-const bot = createBot(BOT_TOKEN);
+const app = express()
+const bot = createBot(BOT_TOKEN)
 
-app.use(cors());
-app.use(express.json());
+app.use(cors())
+app.use(express.json())
 
 async function startBot() {
   try {
-    await bot.start();
-    console.log("Бот успешно запущен и ожидает сообщений.");
+    await bot.start()
+    console.log("Бот успешно запущен и ожидает сообщений.")
   } catch (error) {
-    console.error("Ошибка при запуске бота:", error);
+    console.error("Ошибка при запуске бота:", error)
   }
 }
-
-startBot();
+startBot()
 
 // const privateKey = fs.readFileSync(
 //   "/etc/letsencrypt/live/домен.com/privkey.pem",
@@ -40,7 +36,6 @@ startBot();
 // httpsServer.listen(PORT, async () => {
 //     console.log(`HTTPS Server running on port ${PORT}`);
 // try {
-//   await sequelize.authenticate();
 //   console.log("Подключение к базе данных успешно");
 // } catch (error) {
 //   console.error("Не получилось подключиться к базе данных:", error);
@@ -50,12 +45,6 @@ startBot();
 // Версия для разработки
 
 app.listen(PORT, async () => {
-  console.log(`HTTP Server running on port ${PORT}`);
-  try {
-    // подключение к бд
-    await sequelize.authenticate();
-    console.log("Подключение к базе данных успешно");
-  } catch (error) {
-    console.error("Не получилось подключиться к базе данных:", error);
-  }
-});
+  console.log(`HTTP Server running on port ${PORT}`)
+
+})
